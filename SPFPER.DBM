@@ -1,0 +1,26 @@
+<!-- -->
+<TABLE
+    DESCRIPTION = "Person description"
+    NAME        = "spfper" 
+    FILEIO      = "spfper" >
+<FIELD NAME = "ID"            TYPE = "TEXTUAL" SIZE = "12" />
+<FIELD NAME = "SHORT NAME"    TYPE = "TEXTUAL" SIZE = "15" />
+<FIELD NAME = "FULL NAME"     TYPE = "TEXTUAL" SIZE = "40" />
+<FIELD NAME = "ADDRESS"       TYPE = "TEXTUAL" SIZE = "40" />
+<FIELD NAME = "CITY"          TYPE = "TEXTUAL" SIZE = "40" />
+<FIELD NAME = "POSTCODE"      TYPE = "TEXTUAL" SIZE = "40" />
+<FIELD NAME = "DATE OF BIRTH" TYPE = "DATE"    />
+<FIELD NAME = "SEX"           TYPE = "TEXTUAL" SIZE = "1"   >
+    <SELECT VALUE = "M"  DISPLAY = "Male"      />
+    <SELECT VALUE = "F"  DISPLAY = "Female"    />
+    <SELECT VALUE = "U"  DISPLAY = "Undecided" />
+</FIELD>
+<KEY NAME = "PRIMARY" CODE="P">
+    <FIELD NAME = "ID" />
+</KEY>
+<KEY NAME = "ALTERNATE_A" DUPLICATES = "TRUE" CODE="A">
+    <FIELD NAME = "CITY" />
+    <FIELD NAME = "POSTCODE" />
+</KEY>
+</TABLE>
+

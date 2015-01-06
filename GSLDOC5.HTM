@@ -1,0 +1,54 @@
+<HTML><HEAD><!--Revised: 7 Aug, 1999 By: iMatix-->
+<TITLE>GSLgen Developer's Reference</TITLE></HEAD>
+<BODY BACKGROUND="newstone.gif">
+<TABLE WIDTH=100%><TR><TD ALIGN=LEFT>
+ | <A HREF="/index.htm"> iMatix home page</A><BR>
+ | <A href="gsldoc.htm">&lt;&lt;</A> | <A href="gsldoc4.htm">&lt;</A>
+ | &gt; | <A href="gsldoc5.htm">&gt;&gt;</A>
+<TD ALIGN=RIGHT>
+<IMG SRC="gslgen.gif" ALT="GSLgen" WIDTH=100 HEIGHT=75 ALIGN=RIGHT HSPACE=10>
+<FONT SIZE=4><B>GSLgen</B><BR><FONT SIZE=2>Version 1.1
+</TABLE>
+<HR>
+<H1><A NAME="TOC48">GSLgen Developer's Reference</A></H1>
+
+<P>GSLgen is provided as an callable function
+This allows you to embed GSLgen's capabilities into your application
+program.  Your programming language must be able to link to C subroutines,
+since GSLgen is provided as an ANSI C program.  GSLgen uses the iMatix SFL
+library, including the sflxml module.
+
+<P>The GSL code generator is accessed through the gg_code() function:
+
+<PRE>  int gg_code (XML_ITEM *xml_tree);
+</PRE>
+
+<P>This is a simple fragment of C code that loads an XML file into memory and
+calls the GSL code generator:
+
+<PRE>  #include "sfl.h"                        /*  Universal include file           */
+  #include "ggcode.h"                     /*  GSL header file                  */
+  xml_source = xml_load ("PATH", "example.xml");
+  ASSERT (xml_source);
+  gg_code  (xml_first_child (xml_source));
+  xml_free (xml_source);
+</PRE>
+
+<P>A fuller example is provided in gslgen.c; this program also parses the
+command line, and sets standard values like $(date) and $(time).
+<HR><TABLE WIDTH=100%><TR><TD ALIGN=LEFT WIDTH=60%>
+ | <A href="gsldoc.htm">&lt;&lt;</A> | <A href="gsldoc4.htm">&lt;</A>
+ | &gt; | <A href="gsldoc5.htm">&gt;&gt;</A>
+<BR><FONT SIZE=2>
+| <A href="gsldoc.htm">The General Schema Language</A>
+| <A href="gsldoc1.htm">Introduction</A>
+| <A href="gsldoc2.htm">Installing GSLgen</A>
+| <A href="gsldoc3.htm">Using GSLgen</A>
+| <A href="gsldoc4.htm">The General Schema Language (GSL)</A>
+| <EM>GSLgen Developer's Reference</EM>
+<TD ALIGN=RIGHT NOWRAP>
+<A HREF="/index.htm">
+<IMG SRC="im0096c.gif" WIDTH=96 HEIGHT=36 ALT="iMatix" BORDER=0>
+</A>
+<BR><FONT SIZE=2>Copyright &#169; 1996-99 iMatix</TABLE>
+</BODY></HTML>

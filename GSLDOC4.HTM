@@ -1,0 +1,711 @@
+<HTML><HEAD><!--Revised: 7 Aug, 1999 By: iMatix-->
+<TITLE>The General Schema Language (GSL)</TITLE></HEAD>
+<BODY BACKGROUND="newstone.gif">
+<TABLE WIDTH=100%><TR><TD ALIGN=LEFT>
+ | <A HREF="/index.htm"> iMatix home page</A><BR>
+ | <A href="gsldoc.htm">&lt;&lt;</A> | <A href="gsldoc3.htm">&lt;</A>
+ | <A href="gsldoc5.htm">&gt;</A> | <A href="gsldoc5.htm">&gt;&gt;</A>
+<TD ALIGN=RIGHT>
+<IMG SRC="gslgen.gif" ALT="GSLgen" WIDTH=100 HEIGHT=75 ALIGN=RIGHT HSPACE=10>
+<FONT SIZE=4><B>GSLgen</B><BR><FONT SIZE=2>Version 1.1
+</TABLE>
+<HR>
+<H1><A NAME="TOC11">The General Schema Language (GSL)</A></H1>
+
+<H2><A NAME="TOC12">Description</A></H2>
+
+<P>GSL is a schema language developed by iMatix Corporation. Its purpose is to
+provide a simple yet powerful means of building files which contain a
+mixture of fixed and variable data extracted from separate source files. The
+variable data is read from an XML file. The schema contains both the fixed
+data and controls to insert the variable data as necessary.
+
+<P>GSL is actually closely related to a reporting language such as is used to
+generate reports from a relational database. It differs mainly in that it is
+designed to generate many different reports into as many output files as
+required.
+
+<P>Many GSL concepts are borrowed directly from database terminology, to which
+it is closely related.
+
+<H2><A NAME="TOC13">Scopes</A></H2>
+
+<P>A scope is a level of data definition.  Each scope has a name, a value and
+a series of attributes, each of which has a name and value.  Most scopes
+are associated with XML items; they usually have the same name, value and
+attribute names and values.  See the description of the .for, .new and
+.invoke commands.
+
+<P>At the start of processing of a schema, one scope is implicitly defined
+by GSLgen.  It corresponds to the top-level item of the XML file.  We refer
+to this scope as the root scope.
+
+<P>The .for, .new and .invoke constructs create new scopes.  A new scope
+is considered to lie within the scopes that were open before it.  The
+new scope can be considered to inherit attributes from the scopes
+which are already open.   Scopes can be visualised as a series of
+hierarchically nested data structures.
+
+<H2><A NAME="TOC14">Data Types</A></H2>
+
+<P>GSLgen supports two data types: numeric and string.
+However it makes no formal distinction between them; if a value looks
+numeric then it is treated as such, otherwise it is treated as a string.
+
+<H2><A NAME="TOC15">Constants</A></H2>
+
+<P>A string constant is specified with either single- or double-quotes as
+delimiters, for example: "ABC".  A numeric constant may be  specified
+in the same way or as a simple signed number, for example 123.  String
+constants may continue over several source lines.  The line break is
+considered part of the string constant, unless the last character in
+the line is a single backslash ('\') in which case neither the
+backslash nor the line break is part of the string.
+
+<H2><A NAME="TOC16">Identifiers</A></H2>
+
+<P>Identifiers in GSL refer to XML attribute values or item values.
+There are six different forms of identifier specification:
+
+<DL>
+<DT><B>&lt;scope&gt;. &lt;attr&gt;</B>
+  <DD>A full attribute specification.  Eg.  PAGE.LENGTH
+<DT><B>&lt;attr&gt;</B>
+  <DD>An attribute specification with no scope specified.  In this case GSL
+  will search for an attribute with the given name in all the open scopes,
+  starting with the innermost.  Eg.  DATE
+<DT><B>&lt;scope&gt;.</B>
+  <DD>An item value specification.  This refers to the value of
+  the scope object itself.  Eg.  PAGE.
+<DT><B>.</B>
+  <DD>An item value specification with no scope specified.  This refers
+  to the value of the innermost scope.
+<DT><B>&lt;scope&gt;-&gt; &lt;item&gt;</B>
+  <DD>An item value specification, where &lt;item&gt; is the name of a child of the
+  XML item corresponding to the scope.  If more than one child exists with
+  the given name, only the first is used; if no such child exists, the
+  result is undefined.
+<DT><B>-&gt; &lt;item&gt;</B>
+  <DD>As above, using the innermost scope block.
+</DL>
+
+<H2><A NAME="TOC17">Expressions</A></H2>
+
+<P>GSL expressions are much the same as expressions in other high-level
+programming languages.  They include the following operators:
+
+<DL>
+<DT><B>Multiplicative</B>
+  <DD>*, /
+<DT><B>Additive</B>
+  <DD>+, -
+<DT><B>Comparative</B>
+  <DD>=, &lt;&gt;, &gt;, &gt;=, &lt;, &lt;=
+<DT><B>Safe comparative</B>
+  <DD>?=, ?&lt;&gt;, ?&gt;, ?&gt;=, ?&lt;, ?&lt;=
+<DT><B>Logical</B>
+  <DD>|, &amp;, !
+</DL>
+
+<P>Operator precedence is standard (multiplicative, additive, comparative,
+logical) and brackets are treated as you would expect.
+
+<P>Logical operators treat zero as FALSE and non-zero as TRUE.
+
+<P>GSLgen optimises expression evaluation to the extent that the second
+operand of a binary logical operator ('|', '&amp;') is not evaluated if
+the result of the expression is determined by the first operand.  This
+allows you to use expressions such as
+
+<PRE>  defined (X) &amp; X
+</PRE>
+
+<P>since the second operator is not evaluated when X is undefined.
+
+<P>The safe comparative operators return the same result as their equivalent
+comparative operators when both operands are defined.  If one or both
+operator is undefined, the safe operators return FALSE while the normal
+operators produce an error.
+
+<P>An operand is treated as numeric or string depending on its value.
+Generally, additive, multiplicative and logical operators only apply to
+numeric operands.  There are two cases where an arithmetic operator can
+apply to string values:
+
+<DL>
+<DT><B>+</B>
+  <DD>"ABC" + "DEF" results in "ABCDEF"
+<DT><B>*</B>
+  <DD>"AB" * 3 results in "ABABAB"  Note that "9" * 3 results in 27, since
+  GSLgen makes no distinction between "9" and 9.
+</DL>
+
+<H2><A NAME="TOC18">Built-In Functions</A></H2>
+
+<DL>
+<DT><B>count  ([&lt;scope&gt; '.'] &lt;child&gt;, &lt;expression&gt;)</B>
+  <DD>counts the number of children of the supplied or innermost scope
+  of the given name.  If an expression is specified, it is treated as
+  a condition to determine which children are counted.  In this case,
+  a new scope 'COUNT' is implicitly defined while the condition is
+  evaluated.  For example: count (ITEM, COUNT.NAME = "ABC")
+  returns the number of children of the innermost scope whose attribute
+  NAME has the value "ABC".
+<DT><B>index  ([&lt;scope&gt;])</B>
+  <DD>returns the index of the item associated with the supplied or innermost
+  scope.  See the description of the .for command.
+<DT><B>name ([&lt;scope&gt;])</B>
+  <DD>returns the item name associated with the supplied or innermost
+  scope.  See the description of the .for command.
+<DT><B>exists (&lt;FileName&gt;)</B>
+  <DD>returns a logical value (1 or 0) depending on whether a file of the given
+  name exists of not.
+<DT><B>timestamp (&lt;FileName&gt;)</B>
+  <DD>returns the modification time of the file as a sixteen-character string
+  CCYYMMDDHHMMSS00; undefined if the file does not exist.
+</DL>
+
+<P>logical value (1 or 0) depending on whether a file of the given
+<PRE>  name exists of not.
+defined ([Ident '.'] Ident):
+  returns a logical value (1 or 0) depending on whether the specified
+  identifier is defined or not.
+env (var):
+  returns the value of an environment variable.
+length (string):
+  returns the length of a string (or number considered as a string).
+substr (string, start, end, length):
+  returns a substring of the given string.  This may be used in a number of
+  ways:
+  substr (string, start, end, )    - specify start and end offsets
+  substr (string, start, , length) - specify start offset and length
+  substr (string, , end, length)   - specify end offset and length
+  substr (string, start, , )       - end of string from start offset
+  substr (string, , end, )         - same as substr (0, end, )
+  substr (string, , , length)      - end of string of given length
+trim (string):
+  trims a string by removing leading and trailing white space.
+</PRE>
+
+<H2><A NAME="TOC19">Output lines</A></H2>
+
+<P>The simplest GSL line is just a line of text, which is copied verbatim
+to the current output file.  If no output file has been opened, or if the
+last output file has been closed, the output is copied to the standard
+output.
+
+<P>If the output line contains a backslash ('\') in any position except
+for the last character then the backslash is removed at evaluation
+time.  This allows characters which would normally be interpreted as
+schema commands to be output literally.  To output a backslash, you
+must use a double-backslash ('\\').
+
+<P>If the last character of an output line is a backslash ('\') then the line
+is output with no line terminator; otherwise a line terminator follows the
+output line.
+
+<H2><A NAME="TOC20">Schema Commands</A></H2>
+
+<P>Besides output lines, schemas also contain schema command lines.  These
+are introduced by a period ('.') as the first non-space character in the line.
+The schema commands are described below.
+
+<P>A backslash within a schema command line is ignored, just as with
+output lines.  Use it to include character sequences which would otherwise be
+interpreted as a GSL construct.
+
+<P>If a schema command line ends with a backslash ('\') then the following
+schema line is treated as a continuation of the current line.
+
+<H2><A NAME="TOC21">Substituting Symbols and Expressions</A></H2>
+
+<P>At just about any point within an output or schema command line, a
+substitute construct may be used instead of literal text.  The
+format for expression subsitution is:
+
+<PRE>  $( &lt;Expression&gt; [? default] [% format] [: pretty-print] )
+</PRE>
+
+<P>The order of the default, format and pretty-print modifiers is not
+important.
+
+<P>GSLgen attempts to evaluate the expression by resolving identifiers into
+their value, performing the arithmetic and evaluating any functions.
+
+<P>The default value is used if the expression value is undefined.
+If no default is specified then the value of the substitute construct is
+undefined.
+
+<P>If a format string is provided, it is used to format the result before
+continuing.  It is a normal C format string; the value is always a string
+so the appropriate conversion specifier is %s.
+
+<P>Normally a format
+string contains a '%' to introduce the conversion specifier; if this is the
+first character of the format string then it may be omitted and the '%'
+introducing the format string is implicitly included.  Otherwise the '%' in the
+format string must be preceded by a backslash ('\') so that GSLgen does not
+interpret it as a second (illegal) format string.
+Thus $("XXX"%5s) is equivalent to $("XXX"%\%5s).
+
+<P>The pretty-print modifier specifies how case modification and replacement
+of certain characters takes place.  The valid pretty-print modifiers (not
+case-sensitive) are:
+
+<DL>
+<DT><B>UPPER</B>
+  <DD>UPPER CASE
+<DT><B>lower</B>
+  <DD>lower case
+<DT><B>Neat</B>
+  <DD>Neat Case Modification
+<DT><B>c</B>
+  <DD>substitute_non_alpha_to_make_c_identifier
+<DT><B>cobol</B>
+  <DD>SUBSTITUTE-NON-ALPHA-TO-MAKE-COBOL-IDENTIFIER
+</DL>
+
+<P>More than one pretty-print modifier may be specified; they should be
+separated by commas.
+
+<P>In the specific case where the expression consists of a single identifier
+and no case-modifier is specified (c or cobol may still be specified), the
+case in which the identifier name is specified is used as an example to
+determine whether the case of the result should be modified to UPPER, lower or
+Neat.  A final exception is that if an empty pretty-print string is provided,
+no case modification is performed.
+
+<P>Some examples:  Assume the identifier IDENT has the value "IDENT value"
+and identifer XXX is undefined.
+
+<DL>
+<DT><B>$(XXX)</B>
+  <DD>produces a run-time GSLgen error: Undefined expression.
+<DT><B>$(XXX?Undefined)</B>
+  <DD>"Undefined"
+<DT><B>$(IDENT%12s)</B>
+  <DD>" IDENT VALUE"
+<DT><B>$(ident:upper)</B>
+  <DD>"IDENT VALUE"
+<DT><B>$(Ident)</B>
+  <DD>"Ident Value"
+<DT><B>$(ident:c)</B>
+  <DD>"ident_value"
+<DT><B>$(IDENT:)</B>
+  <DD>"IDENT value"
+</DL>
+
+<H2><A NAME="TOC22">Shuffle</A></H2>
+
+<P>GSLgen can help to keep code neat by enlarging or shrinking white space
+so that column numbers match as far as possible between the schema and
+the output file.  For instance, in the value of the identifier X is
+ABCDEF then:
+
+<PRE>  $(X)   .
+</PRE>
+
+<P>evaluates to
+
+<PRE>  ABCDEF .
+</PRE>
+
+<P>but
+
+<PRE>  $(X?Undefined) .
+</PRE>
+
+<P>evaluates to
+
+<PRE>  ABCDEF .
+</PRE>
+
+<P>The shuffle algorithm uses a parameter 'shuffle' (actually an
+attribute of the root item) whose numeric value influences the
+operation.  It expands a block of white space longer than 'shuffle' as
+much as necessary so that the text following the white space is output
+in the same column.  It also shrinks white space down to a minimum of
+'shuffle' to make space for text preceeding the white space.  If
+'shuffle' is zero, then shuffle is disabled.  The default value of
+'shuffle' is 1; this is the value which produces the results shown
+above.
+
+<P>If the current output ends with a backslash, then the shuffle continues on
+the following line.  Thus
+
+<PRE>  $(X?Undefined)\
+           .
+</PRE>
+
+<P>evaluates to
+
+<PRE>  ABCDEF   .
+</PRE>
+
+<P>Shuffle can cause problems in some cases, for example when outputting
+literal text where the size of white space is important.  In this case
+shuffle should be disabled with
+
+<PRE>  .define shuffle = 0
+</PRE>
+
+<H2><A NAME="TOC23">COBOL</A></H2>
+
+<P>GSLgen helps you make neat COBOL code by automatically filling the first
+six characters of each line with the four-digit line number followed
+by two zeroes.  To enable this function, define an attribute 'cobol' of the
+root item either using
+
+<PRE>  .define cobol = 1
+</PRE>
+
+<P>or
+
+<PRE>  gslgen -cobol etc.
+</PRE>
+
+<P>when you invoke GSLgen, or even (yuk) define an attribute COBOL right in
+your XML file.
+
+<H2><A NAME="TOC24">Predefined Identifiers</A></H2>
+
+<P>There are some identifiers whose value is maintained by GSLgen.  They are
+defined as attributes of the root item.
+
+<DL>
+<DT><B>schema</B>
+  <DD>The name of schema file currently being processed.
+<DT><B>filename</B>
+  <DD>The name of the XML file being processed.
+<DT><B>outfile</B>
+  <DD>The name of the current output file; undefined if there is none.
+<DT><B>line</B>
+  <DD>The line number of the line currently being output to the output file.
+<DT><B>me</B>
+  <DD>The name of the current application: gslgen.
+<DT><B>version</B>
+  <DD>The version of the current application.
+<DT><B>date</B>
+  <DD>The current date in the format YYYY/MM/DD
+<DT><B>time</B>
+  <DD>The current time in the format hh:mm:ss
+</DL>
+
+<H2><A NAME="TOC25">Schema Commands</A></H2>
+
+<H3><A NAME="TOC26">.output</A></H3>
+
+<PRE>  .output &lt;filename&gt;
+</PRE>
+
+<P>closes the current output file, if one is open, and opens a new one.
+
+<P>Examples
+<PRE>  .output "myfile.c"
+  .output FILENAME
+</PRE>
+
+<P>where FILENAME is an identifier whose value is the desired file name.
+
+<H3><A NAME="TOC27">.append</A></H3>
+
+<PRE>  .append &lt;filename&gt;
+</PRE>
+
+<P>closes the current output file, if one is open, and
+opens a previously existing one and prepares to extend it.
+
+<P>See the description of the output command for examples.
+
+<H3><A NAME="TOC28">.close</A></H3>
+
+<PRE>  .close
+</PRE>
+
+<P>closes the current output file, if one is open.
+
+<H3><A NAME="TOC29">.include</A></H3>
+
+<PRE>  .include &lt;filename&gt;
+</PRE>
+
+<P>includes another schema file.
+
+<H3><A NAME="TOC30">.interpret</A></H3>
+
+<PRE>  .interpret &lt;expression&gt;
+</PRE>
+
+<P>interprets the given expression as GSL,
+just as though it were part of the schema.  This is most useful for including
+chunks of GSL which themselves come from an XML file.
+
+<H3><A NAME="TOC31">.echo</A></H3>
+
+<PRE>  .echo &lt;expression&gt;
+</PRE>
+
+<P>outputs the given expression to the standard output.
+
+<H3><A NAME="TOC32">.abort</A></H3>
+
+<PRE>  .abort &lt;expression&gt;
+</PRE>
+
+<P>outputs the given expression to the standard
+output and halts GSLgen operation.
+
+<H3><A NAME="TOC33">.define</A></H3>
+
+<PRE>  .define [&lt;scope&gt;.] &lt;name&gt; [ &lt;text&gt; | = &lt;expression&gt; ]
+</PRE>
+
+<P>defines or
+undefines an XML attribute or item value.  It has several different forms,
+described below:
+
+<DL>
+<DT><B>.define &lt;scope&gt;.&lt;name&gt;</B>
+  <DD>The identifier's definition is cancelled; it becomes undefined.
+<DT><B>.define &lt;scope&gt;.&lt;name&gt; &lt;text&gt;</B>
+  <DD>The identifier is given the literal value of &lt;text&gt;.
+<DT><B>.define &lt;scope&gt;.&lt;name&gt; = &lt;expression&gt;</B>
+  <DD>The identifier is given the result of the evaluation expression.
+</DL>
+
+<P>As during expression evaluation, the scope may be omitted from an
+identifier.  In this case, the identifier is defined at the outermost
+level.  This effectively makes it a global variable.
+
+<P>If the name is omitted from an identifier, the value of the XML item is
+modified, rather than that of an attribute.
+
+<P>If neither scope nor name is specified, the value of the XML item
+associated with the outermost scope is modified.
+
+<P>Notice that there is an ambiguous case of this command
+   .define PERSON. ABCDEF
+
+<P>does not assign the string "ABCDEF" to the value of the item PERSON, but
+undefines the identifier PERSON.ABCDEF.  To do the former, use
+   .define PERSON. = "ABCDEF"
+
+<H3><A NAME="TOC34">.if</A></H3>
+
+<PRE>  .if &lt;expression&gt;
+</PRE>
+
+<P>starts conditional processing of the following block of code if the logical
+value of the expression is TRUE.
+
+<H3><A NAME="TOC35">.elsif</A></H3>
+
+<PRE>  .elsif &lt;expression&gt;
+</PRE>
+
+<P>may follow an .if construct.  Any number of .elsif constructs may be used.
+
+<H3><A NAME="TOC36">.else</A></H3>
+
+<PRE>  .else
+</PRE>
+
+<P>may follow an .if or .elsif construct.  The following block of code is
+processed if the logical value of all the expressions is FALSE.
+
+<H3><A NAME="TOC37">.endif</A></H3>
+
+<PRE>  .endif
+</PRE>
+
+<P>terminates a conditional processing construct.
+
+<P>Example
+
+<PRE>  .if NAME = "JAMES"
+  something
+  .elsif NAME = "JAIME"
+  something else
+  .else
+  everything else
+  .endif
+</PRE>
+
+<H3><A NAME="TOC38">.while</A></H3>
+
+<PRE>  .while &lt;expression&gt;
+</PRE>
+
+<P>introduces a loop.  The following block of code is processed repeatedly as long
+as the expression evaluates to a logical value of TRUE, that is not equal to
+zero.  Expression evaluation takes place before the code is processed, so that
+the code will never be processed if the expression evaluates to FALSE the first
+time.
+
+<H3><A NAME="TOC39">.endwhile</A></H3>
+
+<PRE>  .endwhile
+</PRE>
+
+<P>terminates a .while loop.
+
+<P>Example
+
+<PRE>  .define I = 0
+  .while I &lt; 5
+  loop iteration number $(I)
+  .endwhile
+</PRE>
+
+<H3><A NAME="TOC40">.for</A></H3>
+
+<PRE>  .for [&lt;scope&gt;.] &lt;name&gt; [as &lt;alias&gt;] [where &lt;expression&gt;] [by &lt;expression&gt;]
+  .for [&lt;scope&gt;] .       [as &lt;alias&gt;] [where &lt;expression&gt;] [by &lt;expression&gt;]
+</PRE>
+
+<P>introduces a loop.  The following block of code is processed once for
+each item specified.  If no scope if specified, the innermost scope is
+assumed.  The items processed are those children of the XML item
+corresponding to the specified scope, or the innermost if none is
+specified.  If the first form is used only children with the specified name
+are processed; if the second form is used, all children are processed.
+
+<P>The alias allows you to give the new scope a name other than the
+specified item name; use this when you nest scopes which would
+otherwise have the same name or to supply a scope name when using the
+second form.
+
+<P>The where clause allows you to specify a condition which must be
+satisfied for the code to be processed; the expression is evaluated
+before any processing occurs.
+
+<P>The by clause allows you to sort the
+items according to the result of evaluating the expression for each
+item.  If no by clause is specified the items are processed from the
+oldest to the youngest, the same order in which they are described in
+the XML file.
+
+<P>The expressions in the where and by clauses are evaluated within the
+scope of the current item; that is a new innermost scope is created
+with the name specified by the alias, or name if there is no alias,
+having the attributes of the corresponding XML item.  The same scope
+exists during the processing of the code block following the .for
+statement.
+
+<P>During the evaluation of the for and where expressions, as well as during the
+processing of the code, the function index (name) returns the item number of
+the item of the current iteration.  Note that the index number of an item
+means one more than the number of children of the same parent with the same
+name who are older than the current child.  It is not modified by either
+the where or by expressions.
+
+<H3><A NAME="TOC41">.endfor</A></H3>
+
+<PRE>  .endfor
+</PRE>
+
+<P>terminates a .for loop.
+
+<P>Examples
+
+<PRE>  .for RECORD.FIELD by NAME
+  $(FIELD.NAME)
+  .endfor
+</PRE>
+
+<P>outputs the names of the fields of the current record, sorted in alphabetical
+order.
+
+<PRE>  .for FIELD where index () = 1
+  something
+  .endfor
+</PRE>
+
+<P>processes only the first item named FIELD.
+
+<H3><A NAME="TOC42">.new</A></H3>
+
+<PRE>  .new [&lt;scope&gt;.] &lt;name&gt; [as &lt;alias&gt;]
+</PRE>
+
+<P>creates a new XML item.  This allows you to build new items in the data
+tree.  The new item as the specified name and becomes the youngest child of
+the XML item
+corresponding the the specified scope, or the innermost scope if none is
+specified.  The construct creates a new scope with the name specified by
+the alias or the item name if there is no alias.  The following block of
+code is processed exactly once within this new scope.  It would typically
+create some attributes of the new XML item using the .define statement.
+These values can then be retrieved during a future iteration of a .for
+construct through the new item.
+
+<H3><A NAME="TOC43">.endnew</A></H3>
+
+<PRE>  .endnew
+</PRE>
+
+<P>terminates a .new construct.
+
+<P>Example
+
+<PRE>  .new RECORD.FIELD
+  .    define FIELD.NAME = "NEW FIELD"
+  .endnew
+</PRE>
+
+<H3><A NAME="TOC44">.xml</A></H3>
+
+<PRE>  .xml &lt;filename&gt; [from &lt;scope&gt;]
+</PRE>
+
+<P>provides a second way (the first is .new) to build upon the existing data
+structure.  The XML file specified by the file name is read and the data tree
+is attached to the existing tree at the item corresponding to the specified
+scope, or the innermost if none is specified.
+
+<H3><A NAME="TOC45">.macro</A></H3>
+
+<PRE>  .macro &lt;name&gt; [(&lt;param&gt; [, &lt;param&gt;] ...)]
+</PRE>
+
+<P>defines a macro with the specified name.  A macro is used with the .invoke
+statement, at which time the code following the .macro statement is
+processed.  At this time a new scope is defined with the name of the macro
+and having attributes with the names of the parameters in the .macro
+construct.  The values of these attributes are specified in the .invoke
+statement.
+
+<H3><A NAME="TOC46">.endmacro</A></H3>
+
+<PRE>  .endmacro
+</PRE>
+
+<P>terminates a .macro construct.
+
+<H3><A NAME="TOC47">.invoke</A></H3>
+
+<PRE>  .invoke &lt;name&gt; [([&lt;expression&gt;] [, [&lt;expression&gt;]])] ...)]
+</PRE>
+
+<P>causes a previously defined macro to be processed.  An error occurs if the
+macro has not been defined.  The number of expressions (or empty expressions)
+must match exactly the number of parameters in the macro definition.  An
+empty expression or an expression whose value is undefined causes the
+corresponding parameter to be undefined during processing of the macro code.
+
+<HR><TABLE WIDTH=100%><TR><TD ALIGN=LEFT WIDTH=60%>
+ | <A href="gsldoc.htm">&lt;&lt;</A> | <A href="gsldoc3.htm">&lt;</A>
+ | <A href="gsldoc5.htm">&gt;</A> | <A href="gsldoc5.htm">&gt;&gt;</A>
+<BR><FONT SIZE=2>
+| <A href="gsldoc.htm">The General Schema Language</A>
+| <A href="gsldoc1.htm">Introduction</A>
+| <A href="gsldoc2.htm">Installing GSLgen</A>
+| <A href="gsldoc3.htm">Using GSLgen</A>
+| <EM>The General Schema Language (GSL)</EM>
+| <A href="gsldoc5.htm">GSLgen Developer's Reference</A>
+<TD ALIGN=RIGHT NOWRAP>
+<A HREF="/index.htm">
+<IMG SRC="im0096c.gif" WIDTH=96 HEIGHT=36 ALT="iMatix" BORDER=0>
+</A>
+<BR><FONT SIZE=2>Copyright &#169; 1996-99 iMatix</TABLE>
+</BODY></HTML>

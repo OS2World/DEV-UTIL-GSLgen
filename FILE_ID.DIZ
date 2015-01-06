@@ -1,0 +1,21 @@
+gslgen - Generalised Schema Language
+Generator V1.2,
+Copyright (c) 1996-99 iMatix. GSLgen is a
+general-
+purpose file generator. Its purpose is to
+generate
+code, data or other files from an XML file
+and a
+schema file. The XML file defines a
+particular set
+of data. The schema file (henceforth
+referred to as
+simply the schema) tells GSLgen what to do
+with that
+data. GSLgen allows an orthogonal separation
+between
+an application and its implementation. You
+should be
+comfortable with the basic concepts of the
+Extensible
+Markup Language (XML).
